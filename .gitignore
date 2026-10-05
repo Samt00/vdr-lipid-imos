@@ -1,0 +1,16 @@
+# ---- Patient data: NEVER commit ----
+data/
+*.dta
+*.rds
+*.csv
+*.xlsx
+
+# ---- R session files ----
+.Rproj.user/
+.Rhistory
+.RData
+.Ruserdata
+.Renviron
+
+# ---- macOS ----
+.DS_Store
