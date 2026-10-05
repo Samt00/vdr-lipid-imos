@@ -25,11 +25,11 @@ attr(data$apa_oerdinal, "labels")   # the dictionary itself
 
 # ---- 2. A helper function ----
 
-set_reference_most_common <- function(f) {
-  counts      <- table(f)                                   # count each level
-  most_common <- names(sort(counts, decreasing = TRUE))[1]  # name of the biggest
-  relevel(f, ref = most_common)                             # move it to first
-}
+#set_reference_most_common <- function(f) {
+# counts      <- table(f)                                   # count each level
+# most_common <- names(sort(counts, decreasing = TRUE))[1]  # name of the biggest
+#  relevel(f, ref = most_common)                             # move it to first
+# }
 
 # ---- 3. Build the genotype factors ----
 # as_factor() (from haven) converts a labelled number into a
@@ -39,11 +39,11 @@ set_reference_most_common <- function(f) {
 
 data <- data %>%
   mutate(
-    apa_geno   = set_reference_most_common(as_factor(apa_oerdinal)),
-    taq_geno   = set_reference_most_common(as_factor(Taq_ordinal)),
-    ecorv_geno = set_reference_most_common(as_factor(EcoRV_ordinal)),
-    fok_geno   = set_reference_most_common(as_factor(Fok_ordinal)),
-    bsm_geno   = set_reference_most_common(as_factor(Bsm_ordinal))
+    apa_geno   = as_factor(apa_oerdinal),
+    taq_geno   = as_factor(Taq_ordinal),
+    ecorv_geno = as_factor(EcoRV_ordinal),
+    fok_geno   = as_factor(Fok_ordinal),
+    bsm_geno   = as_factor(Bsm_ordinal)
   )
 
 # ---- 4. Check the conversion ----
