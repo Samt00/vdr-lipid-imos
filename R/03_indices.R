@@ -192,5 +192,58 @@ data <- data %>%
 count(data, AIP_band)
 count(data, nonHDL_band)
 
-# ---- 9. Save ----
+# ---- 9. Grouping variables ----
+# Used for Table 1 and as subgroups in script 07.
+
+# BMI categories, per the proposal (WHO cut-points).
+# right = FALSE includes the left edge, so BMI 25.0 falls into
+# "overweight", not "normal".
+data <- data %>%
+  mutate(
+    bmi_cat = cut(BMI,
+                  breaks = c(-Inf, 18.5, 25, 30, Inf),
+                  labels = c("underweight", "normal",
+                             "overweight", "obese"),
+                  right = FALSE)
+  )
+
+# Vitamin D status. 30 ng/ml is the sufficiency threshold used
+# in Salabat et al., which keeps our subgroups comparable.
+# The three-level version is for description only.
+data <- data %>%
+  mutate(
+    vitd_status = if_else(VitD_Imputed < 30, "deficient", "sufficient"),
+    vitd_status = factor(vitd_status, levels = c("sufficient", "deficient")),
+    vitd_cat3 = cut(VitD_Imputed,
+                    breaks = c(-Inf, 20, 30, Inf),
+                    labels = c("<20", "20-29.9", ">=30"),
+                    right = FALSE)
+  )
+
+# Glycaemic status, following Salabat et al.:
+#   DM    : FBS >= 126 or HbA1c >= 6.5
+#   preDM : 100 <= FBS < 126 and 5.6 <= HbA1c < 6.5
+#   other : healthy
+#
+# TWO CAVEATS TO RAISE WITH YOUR SUPERVISOR:
+# 1. Salabat's preDM definition uses "and"; the ADA standard
+#    uses "or". We follow their wording for comparability.
+# 2. Their definition also includes diabetes history plus
+#    antidiabetic medication. We have no medication data, so
+#    treated diabetics may be misclassified as healthy.
+data <- data %>%
+  mutate(
+    glycaemic = case_when(
+      glu >= 126 | HbA1c >= 6.5                            ~ "DM",
+      (glu >= 100 & glu < 126) | (HbA1c >= 5.6 & HbA1c < 6.5) ~ "preDM",
+      TRUE                                                  ~ "healthy"
+    ),
+    glycaemic = factor(glycaemic, levels = c("healthy", "preDM", "DM"))
+  )
+
+table(data$bmi_cat, useNA = "ifany")
+table(data$vitd_status, useNA = "ifany")
+table(data$glycaemic, useNA = "ifany")
+
+# ---- 10. Save ----
 saveRDS(data, file.path(path_processed, "analysis.rds"))
