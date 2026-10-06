@@ -51,6 +51,47 @@ data <- data %>%
 # If MEASURED, the differences scatter.
 summary(data$LDL - data$LDL_friedewald)
 
+# ---- 2b. Internal consistency of the lipid panel ----
+# Total cholesterol is the sum of cholesterol across all
+# lipoprotein fractions, so TC must be at least HDL + LDL.
+# Remnant cholesterol (TC - HDL - LDL) cannot be negative.
+# Any violation means at least one of the three is mismeasured.
+
+data <- data %>%
+  mutate(remnant_C = chol - HDL - LDL)
+
+summary(data$remnant_C)
+
+# How many are impossible?
+sum(data$remnant_C < 0, na.rm = TRUE)
+
+# Who are they?
+data %>%
+  filter(remnant_C < 0) %>%
+  select(ID, TG, chol, HDL, LDL, remnant_C) %>%
+  arrange(remnant_C)
+
+# ---- 2c. Flag lipid panels that violate internal consistency ----
+# Total cholesterol must be at least HDL + LDL, so remnant
+# cholesterol (TC - HDL - LDL) cannot be negative. Ten
+# participants violate this.
+#
+# Most are within assay imprecision (-1 to -2 mg/dL). Two are
+# large enough to indicate genuine measurement error.
+#
+# We keep everyone in the primary analysis and flag them here,
+# so sensitivity analyses can exclude them later without
+# re-deriving the rule.
+
+data <- data %>%
+  mutate(
+    lipid_inconsistent = !is.na(remnant_C) & remnant_C < 0,
+    lipid_implausible  = !is.na(remnant_C) & remnant_C < -20
+  )
+
+sum(data$lipid_inconsistent, na.rm = TRUE)   # 10
+sum(data$lipid_implausible,  na.rm = TRUE)   # 2
+
 # ---- 3. AIP - Atherogenic Index of Plasma ----
 # AIP = log10( TG / HDL-C ), both in mmol/L. Unitless.
 # Published risk bands assume the mmol/L basis:
@@ -131,6 +172,25 @@ data %>%
 data %>%
   select(sex, Waist_circumference, BMI, TG_mmol, HDL_mmol, VAI) %>%
   head(3)
+
+# ---- 8. Clinical risk bands (descriptive only) ----
+# Used to describe the cohort in Table 1. The regression
+# outcomes stay continuous - dichotomising a continuous
+# variable discards information and reduces power.
+
+data <- data %>%
+  mutate(
+    AIP_band = cut(AIP,
+                   breaks = c(-Inf, 0.11, 0.21, Inf),
+                   labels = c("low", "intermediate", "high")),
+    nonHDL_band = cut(nonHDL_C,
+                      breaks = c(-Inf, 130, 160, 190, Inf),
+                      labels = c("desirable", "above desirable",
+                                 "borderline high", "high or very high"))
+  )
+
+count(data, AIP_band)
+count(data, nonHDL_band)
 
 # ---- 9. Save ----
 saveRDS(data, file.path(path_processed, "analysis.rds"))
